@@ -1,5 +1,5 @@
-import React from 'react';
-import { LayoutGrid, ListFilter, SlidersHorizontal } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { LayoutGrid, ListFilter, SlidersHorizontal, ChevronDown } from 'lucide-react';
 import { useTravel } from '../hooks/useTravel';
 import CountryCard from '../components/CountryCard';
 import SearchBar from '../components/SearchBar';
@@ -23,8 +23,22 @@ const Dashboard = () => {
     countries
   } = useTravel();
 
+  const [visibleCount, setVisibleCount] = useState(20);
+
+  // Reset pagination when search/filter changes
+  useEffect(() => {
+    setVisibleCount(20);
+  }, [searchTerm, regionFilter, sortBy]);
+
   if (loading && countries.length === 0) return <LoadingSpinner fullPage />;
   if (error && countries.length === 0) return <ErrorState message={error} />;
+
+  const visibleCountries = filteredCountries.slice(0, visibleCount);
+  const hasMore = filteredCountries.length > visibleCount;
+
+  const handleLoadMore = () => {
+    setVisibleCount(prev => prev + 20);
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
@@ -65,19 +79,36 @@ const Dashboard = () => {
 
       <div className="mb-4 flex items-center justify-between">
         <p className="text-sm text-slate-500 dark:text-slate-400">
-          Showing <span className="font-bold text-slate-900 dark:text-100">{filteredCountries.length}</span> countries
+          Showing <span className="font-bold text-slate-900 dark:text-slate-100">{visibleCountries.length}</span> of <span className="font-bold text-slate-900 dark:text-slate-100">{filteredCountries.length}</span> countries
         </p>
         <div className="flex items-center space-x-2 text-slate-400">
           <LayoutGrid className="w-4 h-4" />
         </div>
       </div>
 
-      {filteredCountries.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredCountries.map(country => (
-            <CountryCard key={country.cca3} country={country} />
-          ))}
-        </div>
+      {visibleCountries.length > 0 ? (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {visibleCountries.map(country => (
+              <CountryCard key={country.cca3} country={country} />
+            ))}
+          </div>
+          
+          {hasMore && (
+            <div className="mt-12 flex flex-col items-center">
+              <button
+                onClick={handleLoadMore}
+                className="group flex items-center space-x-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary-500 px-8 py-3 rounded-xl font-bold text-slate-700 dark:text-slate-200 shadow-sm transition-all card-hover"
+              >
+                <span>Load More Countries</span>
+                <ChevronDown className="w-5 h-5 group-hover:translate-y-1 transition-transform" />
+              </button>
+              <p className="mt-4 text-xs text-slate-400">
+                You've seen {visibleCountries.length} out of {filteredCountries.length} destinations
+              </p>
+            </div>
+          )}
+        </>
       ) : (
         <EmptyState />
       )}
